@@ -11,6 +11,9 @@ class User extends Client {
 	public $id;
 	public $nickname;
 	public $email;
+    
+    public $updateFields = ['username', 'password', 'nickname', 'email'];
+    public $remoteFieldsAlias = ['username' => 'name'];
 
 	public function __construct($username, $password, $fields = array()){
 		parent::__construct();
@@ -76,6 +79,33 @@ class User extends Client {
 				'username' => $this->username,
 				'password' => $this->password,
 			))
+			->send();
+
+		if( $response->code == 200 && isset($response->body->success) && $response->body->success == true ) {
+			$this->id = $response->body->user->_id;
+			return $response->body->user;
+		} else {
+			echo( $response->body->error . "\n" );
+			return false;
+		}
+	}
+    
+	/**
+	* Update user.
+	*/
+	public function update() {
+        
+        $requestBody = array(
+            'userId' => $this->id,
+            'data' => array(),
+        );
+        foreach($this->updateFields as $field) {
+            $remoteFieldName = isset($this->remoteFieldsAlias[$field]) ? $this->remoteFieldsAlias[$field] : $field;
+            $requestBody['data'][$remoteFieldName] = $this->{$field};
+        }
+        
+		$response = Request::post( $this->api . 'users.update' )
+			->body($requestBody)
 			->send();
 
 		if( $response->code == 200 && isset($response->body->success) && $response->body->success == true ) {
