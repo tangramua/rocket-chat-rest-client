@@ -9,23 +9,48 @@ class User extends Client {
 	public $username;
 	private $password;
 	public $id;
-	public $nickname;
+	public $name;
 	public $email;
+	public $active = true;
     
-    public $updateFields = ['username', 'password', 'nickname', 'email'];
-    public $remoteFieldsAlias = ['username' => 'name'];
-
+    public $remoteData;
+    
+    public $lastError = null;
+    
 	public function __construct($username, $password, $fields = array()){
 		parent::__construct();
-		$this->username = $username;
-		$this->password = $password;
-		if( isset($fields['nickname']) ) {
-			$this->nickname = $fields['nickname'];
-		}
-		if( isset($fields['email']) ) {
-			$this->email = $fields['email'];
-		}
+        
+        if(is_array($username)) {
+            $fields = $username;
+        } else {
+            $fields['username'] = $username;
+            $fields['password'] = $password;
+        }
+		$this->setData($fields);
 	}
+    
+    /**
+     * Set data for user properties
+     * @param array $data
+     */
+    public function setData(array $data)
+    {
+        foreach($data as $field => $value) {
+            if(!property_exists($this, $field)) continue;
+            $this->{$field} = $value;
+        }
+        return $this;
+    }
+    
+    public function setRemoteData($data) {
+        $this->remoteData = $data;
+
+        $this->id = $this->remoteData->_id;
+        $this->username = $this->remoteData->username;
+        $this->email = $this->remoteData->emails[0]->address;
+        $this->name = $this->remoteData->name;
+        $this->active = $this->remoteData->active;
+    }
 
 	/**
 	* Authenticate with the REST API.
@@ -46,7 +71,7 @@ class User extends Client {
 			$this->id = $response->body->data->userId;
 			return true;
 		} else {
-			echo( $response->body->message . "\n" );
+			$this->lastError = $response->body->message;
 			return false;
 		}
 	}
@@ -57,13 +82,12 @@ class User extends Client {
 	public function info() {
 		$response = Request::get( $this->api . 'users.info?userId=' . $this->id )->send();
 
-		if( $response->code == 200 && isset($response->body->success) && $response->body->success == true ) {
-			$this->id = $response->body->user->_id;
-			$this->nickname = $response->body->user->name;
-			$this->email = $response->body->user->emails[0]->address;
+		if( $response->code == 200 && isset($response->body->success) && $response->body->success == true )
+        {
+            $this->setRemoteData($response->body->user);
 			return $response->body;
 		} else {
-			echo( $response->body->error . "\n" );
+			$this->lastError = $response->body->error;
 			return false;
 		}
 	}
@@ -74,7 +98,7 @@ class User extends Client {
 	public function create() {
 		$response = Request::post( $this->api . 'users.create' )
 			->body(array(
-				'name' => $this->nickname,
+				'name' => $this->name,
 				'email' => $this->email,
 				'username' => $this->username,
 				'password' => $this->password,
@@ -82,10 +106,10 @@ class User extends Client {
 			->send();
 
 		if( $response->code == 200 && isset($response->body->success) && $response->body->success == true ) {
-			$this->id = $response->body->user->_id;
-			return $response->body->user;
+            $this->setRemoteData($response->body->user);
+			return $this->remoteData;
 		} else {
-			echo( $response->body->error . "\n" );
+			$this->lastError = $response->body->error;
 			return false;
 		}
 	}
@@ -93,26 +117,33 @@ class User extends Client {
 	/**
 	* Update user.
 	*/
-	public function update() {
-        
+	public function update($data)
+    {
+        $this->setData($data);
+
         $requestBody = array(
             'userId' => $this->id,
-            'data' => array(),
+            'data' => array(
+				'name' => $this->name,
+				'email' => $this->email,
+				'username' => $this->username,
+				'active' => $this->active,
+			),
         );
-        foreach($this->updateFields as $field) {
-            $remoteFieldName = isset($this->remoteFieldsAlias[$field]) ? $this->remoteFieldsAlias[$field] : $field;
-            $requestBody['data'][$remoteFieldName] = $this->{$field};
+
+        if(isset($data['password'])) {
+            $requestBody['data']['password'] = $data['password'];
         }
-        
+
 		$response = Request::post( $this->api . 'users.update' )
 			->body($requestBody)
 			->send();
 
 		if( $response->code == 200 && isset($response->body->success) && $response->body->success == true ) {
-			$this->id = $response->body->user->_id;
-			return $response->body->user;
+            $this->setRemoteData($response->body->user);
+			return $this->remoteData;
 		} else {
-			echo( $response->body->error . "\n" );
+			$this->lastError = $response->body->error;
 			return false;
 		}
 	}
@@ -133,7 +164,7 @@ class User extends Client {
 		if( $response->code == 200 && isset($response->body->success) && $response->body->success == true ) {
 			return true;
 		} else {
-			echo( $response->body->error . "\n" );
+			$this->lastError = $response->body->error;
 			return false;
 		}
 	}
