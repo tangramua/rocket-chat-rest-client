@@ -7,6 +7,13 @@ use Httpful\Request;
 class Client{
 
 	public $api;
+    
+    public $lastError = null;
+    
+    //static lists
+    private static $allUsers;
+    private static $allChannels;
+    private static $allGroups;
 
 	function __construct(){
 		$this->api = ROCKET_CHAT_INSTANCE . REST_API_ROOT;
@@ -22,7 +29,7 @@ class Client{
 	* Get version information. This simple method requires no authentication.
 	*/
 	public function version() {
-		$response = \Httpful\Request::get( $this->api . 'info' )->send();
+		$response = Request::get( $this->api . 'info' )->send();
 		return $response->body->info->version;
 	}
 
@@ -59,6 +66,26 @@ class Client{
 		}
 	}
 
+    /**
+     * Get all of the users and return them as \RocketChat\User array
+     * @return array
+     */
+    public function getAllUsers($update = false) {
+        if($this->allUsers && !$update) return $this->allUsers;
+        
+        $list = $this->list_users();
+        $result = [];
+        foreach($list as $userData) {
+            $user = new \RocketChat\User();
+            $user->setRemoteData($userData);
+            $result[$user->username] = $user;
+        }
+
+        $this->allUsers = $result;
+        
+        return $result;
+    }
+
 	/**
 	* List the private groups the caller is part of.
 	*/
@@ -94,5 +121,23 @@ class Client{
 			return false;
 		}
 	}
+    
+    /**
+     * Get all of the channels
+     * @return array
+     */
+    public function getAllChannels($update = false) {
+        if($this->allChannels && !$update) return $this->allChannels;
+        
+        $list = $this->list_channels();
+        $result = [];
+        foreach($list as $channel) {
+            $result[$channel->id] = $channel;
+        }
+
+        $this->allChannels = $result;
+        
+        return $result;
+    }
 
 }

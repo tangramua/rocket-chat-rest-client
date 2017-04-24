@@ -15,8 +15,6 @@ class User extends Client {
     
     public $remoteData;
     
-    public $lastError = null;
-    
 	public function __construct($username, $password, $fields = array()){
 		parent::__construct();
         
@@ -168,4 +166,26 @@ class User extends Client {
 			return false;
 		}
 	}
+    
+    
+    /**
+     * Get user channels
+     */
+    public function getChannels($update = false) {
+        $result = [];
+        if(empty($this->username)) return $result;
+        
+        $channels = $this->getAllChannels($update);
+        foreach($channels as $channel) {
+            $isMember = false;
+            foreach($channel->members as $channelMember) {
+                if($this->username != $channelMember->username) continue;
+                $isMember = true;
+            }
+            if(!$isMember) continue;
+            $result[$channel->id] = $channel->name;
+        }
+        
+        return $result;
+    }
 }
