@@ -12,10 +12,9 @@ class User extends Client {
 	public $name;
 	public $email;
 	public $active = true;
+	public $verified = true;
     
     public $remoteData;
-    
-    public $lastError = null;
     
 	public function __construct($username, $password, $fields = array()){
 		parent::__construct();
@@ -53,8 +52,8 @@ class User extends Client {
     }
 
 	/**
-	* Authenticate with the REST API.
-	*/
+	 * Authenticate with the REST API.
+	 */
 	public function login($save_auth = true) {
 		$response = Request::post( $this->api . 'login' )
 			->body(array( 'user' => $this->username, 'password' => $this->password ))
@@ -77,8 +76,8 @@ class User extends Client {
 	}
 
 	/**
-	* Gets a user’s information, limited to the caller’s permissions.
-	*/
+	 * Gets a user’s information, limited to the caller’s permissions.
+	 */
 	public function info() {
 		$response = Request::get( $this->api . 'users.info?userId=' . $this->id )->send();
 
@@ -93,8 +92,8 @@ class User extends Client {
 	}
 
 	/**
-	* Create a new user.
-	*/
+	 * Create a new user.
+	 */
 	public function create() {
 		$response = Request::post( $this->api . 'users.create' )
 			->body(array(
@@ -102,6 +101,7 @@ class User extends Client {
 				'email' => $this->email,
 				'username' => $this->username,
 				'password' => $this->password,
+				'verified' => $this->verified,
 			))
 			->send();
 
@@ -115,8 +115,8 @@ class User extends Client {
 	}
     
 	/**
-	* Update user.
-	*/
+	 * Update user.
+	 */
 	public function update($data)
     {
         $this->setData($data);
@@ -128,6 +128,7 @@ class User extends Client {
 				'email' => $this->email,
 				'username' => $this->username,
 				'active' => $this->active,
+                'verified' => $this->verified,
 			),
         );
 
@@ -149,8 +150,8 @@ class User extends Client {
 	}
 
 	/**
-	* Deletes an existing user.
-	*/
+	 * Deletes an existing user.
+	 */
 	public function delete() {
 
 		// get user ID if needed
@@ -168,4 +169,26 @@ class User extends Client {
 			return false;
 		}
 	}
+    
+    
+    /**
+     * Get user channels
+     */
+    public function getChannels($update = false) {
+        $result = [];
+        if(empty($this->username)) return $result;
+        
+        $channels = $this->getAllChannels($update);
+        foreach($channels as $channel) {
+            $isMember = false;
+            foreach($channel->members as $channelMember) {
+                if($this->username != $channelMember->username) continue;
+                $isMember = true;
+            }
+            if(!$isMember) continue;
+            $result[$channel->id] = $channel->name;
+        }
+        
+        return $result;
+    }
 }
