@@ -13,6 +13,10 @@ class User extends Client {
 	public $email;
 	public $active = true;
 	public $verified = true;
+    public $roles = ['user'];
+    
+    public $livechatAgent = null;
+    public $livechatManager = null;
     
     public $remoteData;
     
@@ -49,6 +53,7 @@ class User extends Client {
         $this->email = $this->remoteData->emails[0]->address;
         $this->name = $this->remoteData->name;
         $this->active = $this->remoteData->active;
+        $this->roles = $this->remoteData->roles;
     }
 
 	/**
@@ -101,6 +106,7 @@ class User extends Client {
 				'email' => $this->email,
 				'username' => $this->username,
 				'password' => $this->password,
+                'roles' => $this->roles,
 				'verified' => $this->verified,
 			))
 			->send();
@@ -127,6 +133,7 @@ class User extends Client {
 				'name' => $this->name,
 				'email' => $this->email,
 				'username' => $this->username,
+                'roles' => $this->roles,
 				'active' => $this->active,
                 'verified' => $this->verified,
 			),

@@ -14,6 +14,8 @@ class Client{
     private static $allUsers;
     private static $allChannels;
     private static $allGroups;
+    private static $allLivechatAgents;
+    private static $allLivechatManagers;
 
 	function __construct(){
 		$this->api = ROCKET_CHAT_INSTANCE . REST_API_ROOT;
@@ -76,7 +78,7 @@ class Client{
         $list = $this->list_users();
         $result = [];
         foreach($list as $userData) {
-            $user = new \RocketChat\User();
+            $user = new User();
             $user->setRemoteData($userData);
             $result[$user->username] = $user;
         }
@@ -144,14 +146,16 @@ class Client{
      * List all livechat users 
      * @return array
      */
-    public function list_livechat_users($type = 'users')
+    public function list_livechat_users($type = Livechat\User::TYPE_AGENT)
     {
         $response = Request::get( $this->api . 'livechat/users/'.$type )->send();
 
-		if( $response->code == 200 && isset($response->body->success) && $response->body->success == true ) {
+        if( $response->code == 200 && isset($response->body->success) && $response->body->success == true ) {
 			$list = array();
 			foreach($response->body->users as $livechatUserData){
-				$list[] = new Livechat\User($livechatUserData);
+                $livechatUser = new Livechat\User(array('type' => $type));
+                $livechatUser->setRemoteData($livechatUserData);
+				$list[] = $livechatUser;
 			}
 			return $list;
 		} else {
@@ -161,19 +165,37 @@ class Client{
     }
     
     /**
-     * Get all livechat users 
+     * Get all livechat agents 
      * @return array
      */
-    public function getAllLivechatUsers($update = false) {
-        if($this->allLivechatUsers && !$update) return $this->allLivechatUsers;
+    public function getAllLivechatAgents($update = false) {
+        if($this->allLivechatUsers && !$update) return $this->allLivechatAgents;
         
-        $list = $this->list_livechat_users('users');
+        $list = $this->list_livechat_users(Livechat\User::TYPE_AGENT);
         $result = [];
-        foreach($list as $channel) {
-            $result[$channel->id] = $channel;
+        foreach($list as $item) {
+            $result[$item->id] = $item;
         }
 
-        $this->allChannels = $result;
+        $this->allLivechatUsers = $result;
+        
+        return $result;
+    }
+    
+    /**
+     * Get all livechat managers 
+     * @return array
+     */
+    public function getAllLivechatManagers($update = false) {
+        if($this->allLivechatManagers && !$update) return $this->allLivechatManagers;
+        
+        $list = $this->list_livechat_users(Livechat\User::TYPE_MANAGER);
+        $result = [];
+        foreach($list as $item) {
+            $result[$item->id] = $item;
+        }
+
+        $this->allLivechatManagers = $result;
         
         return $result;
     }
