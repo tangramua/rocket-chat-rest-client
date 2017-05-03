@@ -139,5 +139,43 @@ class Client{
         
         return $result;
     }
+    
+    /**
+     * List all livechat users 
+     * @return array
+     */
+    public function list_livechat_users($type = 'users')
+    {
+        $response = Request::get( $this->api . 'livechat/users/'.$type )->send();
+
+		if( $response->code == 200 && isset($response->body->success) && $response->body->success == true ) {
+			$list = array();
+			foreach($response->body->users as $livechatUserData){
+				$list[] = new Livechat\User($livechatUserData);
+			}
+			return $list;
+		} else {
+			echo( $response->body->error . "\n" );
+			return false;
+		}
+    }
+    
+    /**
+     * Get all livechat users 
+     * @return array
+     */
+    public function getAllLivechatUsers($update = false) {
+        if($this->allLivechatUsers && !$update) return $this->allLivechatUsers;
+        
+        $list = $this->list_livechat_users('users');
+        $result = [];
+        foreach($list as $channel) {
+            $result[$channel->id] = $channel;
+        }
+
+        $this->allChannels = $result;
+        
+        return $result;
+    }
 
 }
