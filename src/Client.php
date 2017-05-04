@@ -16,6 +16,7 @@ class Client{
     private static $allGroups;
     private static $allLivechatAgents;
     private static $allLivechatManagers;
+    private static $allLivechatDepartments;
 
 	function __construct(){
 		$this->api = ROCKET_CHAT_INSTANCE . REST_API_ROOT;
@@ -46,7 +47,7 @@ class Client{
 				return $response->body;
 			}
 		} else {
-			echo( $response->body->message . "\n" );
+			$this->lastError = $response->body->message;
 			return false;
 		}
 	}
@@ -63,7 +64,7 @@ class Client{
 		if( $response->code == 200 && isset($response->body->success) && $response->body->success == true ) {
 			return $response->body->users;
 		} else {
-			echo( $response->body->error . "\n" );
+			$this->lastError = $response->body->error;
 			return false;
 		}
 	}
@@ -101,7 +102,7 @@ class Client{
 			}
 			return $groups;
 		} else {
-			echo( $response->body->error . "\n" );
+			$this->lastError = $response->body->error;
 			return false;
 		}
 	}
@@ -119,7 +120,7 @@ class Client{
 			}
 			return $groups;
 		} else {
-			echo( $response->body->error . "\n" );
+			$this->lastError = $response->body->error;
 			return false;
 		}
 	}
@@ -159,7 +160,7 @@ class Client{
 			}
 			return $list;
 		} else {
-			echo( $response->body->error . "\n" );
+			$this->lastError = $response->body->error;
 			return false;
 		}
     }
@@ -199,5 +200,44 @@ class Client{
         
         return $result;
     }
+    
+    /**
+     * List all livechat users 
+     * @return array
+     */
+    public function list_livechat_departments()
+    {
+        $response = Request::get( $this->api . 'livechat/department' )->send();
+        if( $response->code == 200 && isset($response->body->success) && $response->body->success == true ) {
+			$list = array();
+			foreach($response->body->departments as $livechatDepartmentData){
+                $livechatDepartment = new Livechat\Department();
+                $livechatDepartment->setRemoteData($livechatDepartmentData);
+                $livechatDepartment->info();
+				$list[] = $livechatDepartment;
+			}
+			return $list;
+		} else {
+			$this->lastError = $response->body->error;
+			return false;
+		}
+    }
+    
+    /**
+     * Get all livechat departments 
+     * @return array
+     */
+    public function getAllLivechatDepartments($update = false) {
+        if($this->allLivechatDepartments && !$update) return $this->allLivechatDepartments;
+        
+        $list = $this->list_livechat_departments();
+        $result = [];
+        foreach($list as $item) {
+            $result[$item->id] = $item;
+        }
 
+        $this->allLivechatDepartments = $result;
+        
+        return $result;
+    }
 }
