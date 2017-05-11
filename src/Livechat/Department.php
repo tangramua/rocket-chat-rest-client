@@ -62,7 +62,7 @@ class Department extends Client {
         }
     }
     
-    public function info()
+    public function loadInfo($update = false)
     {
         $response = Request::get( $this->api . 'livechat/department/' . $this->id )->send();
         if( $response->code == 200 && isset($response->body->success) && $response->body->success == true ) {
@@ -90,10 +90,10 @@ class Department extends Client {
                 'username' =>  $agent->username,
             ];
         }
-        
-        $response = Request::post( $this->api . 'livechat/deparment/' . $this->id )
-			->body($body)
-			->send();
+
+        $response = Request::put( $this->api . 'livechat/department/' . $this->id )
+            ->body($body)
+            ->send();
 
 		if( $response->code == 200 && isset($response->body->success) && $response->body->success == true ) {
 			return true;
@@ -101,6 +101,41 @@ class Department extends Client {
 			$this->lastError = $response->body->error;
 			return false;
 		}
+    }
+    
+    
+    /**
+     * 
+     * @param \RocketChat\User $user
+     * @return bool
+     */
+    public function invite(\RocketChat\User $user) {
+        //check
+        $livechatUser = isset($this->agents[$user->username]) ? $this->agents[$user->username] : null;
+        if($livechatUser) return true;
+        //add
+        $this->agents[$agent->username] = new User([
+            'type' => User::TYPE_AGENT,
+            'id' => $user->id,
+            'username' => $user->username,
+        ]);
+        //save
+        return $this->update();
+    }
+    
+    /**
+     * 
+     * @param \RocketChat\User $user
+     * @return bool
+     */
+    public function kick(\RocketChat\User $user) {
+        //check
+        $livechatUser = isset($this->agents[$user->username]) ? $this->agents[$user->username] : null;
+        if(!$livechatUser) return true;
+        //remove
+        unset($this->agents[$user->username]);
+        //save
+        return $this->update();
     }
 
 

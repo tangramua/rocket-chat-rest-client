@@ -213,7 +213,7 @@ class Client{
 			foreach($response->body->departments as $livechatDepartmentData){
                 $livechatDepartment = new Livechat\Department();
                 $livechatDepartment->setRemoteData($livechatDepartmentData);
-                $livechatDepartment->info();
+                $livechatDepartment->loadInfo();
 				$list[] = $livechatDepartment;
 			}
 			return $list;

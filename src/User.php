@@ -17,6 +17,7 @@ class User extends Client {
     
     public $livechatAgent = null;
     public $livechatManager = null;
+//    public $livechatDepartments = [];
     
     public $remoteData;
     
@@ -194,6 +195,32 @@ class User extends Client {
             }
             if(!$isMember) continue;
             $result[$channel->id] = $channel->name;
+        }
+        
+        return $result;
+    }
+    
+    /**
+     * Get user channels
+     */
+    public function getLivechatDepartments($update = false) {
+        $result = [];
+        if(empty($this->username)) return $result;
+        
+        $livechatDepartments = $this->getAllLivechatDepartments($update);
+        
+        foreach($livechatDepartments as $livechatDepartment) {
+            $isMember = false;
+            
+            //load info if not loaded
+            if(count($livechatDepartment->agents)) {
+                $livechatDepartment->loadInfo();
+            }
+            
+            $isMember = isset($livechatDepartment->agents[$this->username]);
+            if(!$isMember) continue;
+            
+            $result[$livechatDepartment->id] = $livechatDepartment;
         }
         
         return $result;
