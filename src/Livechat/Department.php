@@ -81,6 +81,7 @@ class Department extends Client {
                 'enabled' => $this->enabled,
                 'showOnRegistration' => $this->showOnRegistration,
                 'name' => $this->name,
+                'description' => $this->description,
             ],
             'agents' => [],
         ];
