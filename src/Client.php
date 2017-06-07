@@ -74,7 +74,7 @@ class Client{
      * @return array
      */
     public function getAllUsers($update = false) {
-        if($this->allUsers && !$update) return $this->allUsers;
+        if(!empty(self::$allUsers) && !$update) return self::$allUsers;
 
         $list = $this->list_users();
         $result = [];
@@ -84,7 +84,7 @@ class Client{
             $result[$user->username] = $user;
         }
 
-        $this->allUsers = $result;
+        self::$allUsers = $result;
 
         return $result;
     }
