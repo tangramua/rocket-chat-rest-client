@@ -38,7 +38,7 @@ echo $api->version(); echo "\n";
 // login as the main admin user
 $admin = new \RocketChat\User('my-admin-name', 'my-admin-password');
 if( $admin->login() ) {
-	echo "admin user logged in\n";
+  echo "admin user logged in\n";
 };
 $admin->info();
 echo "I'm {$admin->nickname} ({$admin->id}) "; echo "\n";
@@ -48,11 +48,11 @@ echo "I'm {$admin->nickname} ({$admin->id}) "; echo "\n";
 ```php
 // create a new user
 $newuser = new \RocketChat\User('new_user_name', 'new_user_password', array(
-	'nickname' => 'New user nickname',
-	'email' => 'newuser@example.org',
+  'nickname' => 'New user nickname',
+  'email' => 'newuser@example.org',
 ));
 if( !$newuser->login(false) ) {
-	// actually create the user if it does not exist yet
+  // actually create the user if it does not exist yet
   $newuser->create();
 }
 echo "user {$newuser->nickname} created ({$newuser->id})\n";

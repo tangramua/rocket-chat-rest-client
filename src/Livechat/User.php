@@ -6,22 +6,22 @@ use Httpful\Request;
 use RocketChat\Client;
 
 class User extends Client {
-	
+
     const TYPE_AGENT = 'agent';
     const TYPE_MANAGER = 'manager';
-    
+
     public $id;
     public $username;
     public $type;
-    
+
     public $remoteData;
-    
-	public function __construct($data = array()){
-		parent::__construct();
+
+    public function __construct($data = array()){
+        parent::__construct();
 
         $this->setData($data);
-	}
-    
+    }
+
     /**
      * Set data for user properties
      * @param array $data
@@ -34,7 +34,7 @@ class User extends Client {
         }
         return $this;
     }
-    
+
     public function setRemoteData($data) {
         $this->remoteData = $data;
 
