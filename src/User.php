@@ -21,7 +21,7 @@ class User extends Client {
 
     public $remoteData;
 
-    public function __construct($username, $password, $fields = array()){
+    public function __construct($username = null, $password = null, $fields = array()){
         parent::__construct();
 
         if(is_array($username)) {
