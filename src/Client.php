@@ -58,8 +58,15 @@ class Client{
      * Gets all of the users in the system and their information, the result is
      * only limited to what the callee has access to view.
      */
-    public function list_users(){
-        $response = Request::get( $this->api . 'users.list' )->send();
+        public function list_users($query = []){
+        $arguments = [];
+        if($query) {
+            $arguments['query'] = json_encode($query);
+        }
+
+        $url = $this->api . 'users.list' . (($arguments) ? '?'.http_build_query($arguments) : '');
+
+        $response = Request::get($url)->send();
 
         if( $response->code == 200 && isset($response->body->success) && $response->body->success == true ) {
             return $response->body->users;
@@ -73,10 +80,10 @@ class Client{
      * Get all of the users and return them as \RocketChat\User array
      * @return array
      */
-    public function getAllUsers($update = false) {
+    public function getAllUsers($update = false, $query = []) {
         if(!empty(self::$allUsers) && !$update) return self::$allUsers;
 
-        $list = $this->list_users();
+        $list = $this->list_users($query);
         $result = [];
         foreach($list as $userData) {
             $user = new User();
