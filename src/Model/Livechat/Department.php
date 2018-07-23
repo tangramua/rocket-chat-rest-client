@@ -1,11 +1,11 @@
 <?php
 
-namespace RocketChat\Livechat;
+namespace RocketChat\Model\Livechat;
 
 use Httpful\Request;
-use RocketChat\Client;
+use RocketChat\Model\Base as BaseModel;
 
-class Department extends Client {
+class Department extends BaseModel {
 
     public $id;
     public $enabled = true;
@@ -20,22 +20,7 @@ class Department extends Client {
 
 
     public function __construct($data = array()){
-        parent::__construct();
-
         $this->setData($data);
-    }
-
-    /**
-     * Set data for user properties
-     * @param array $data
-     */
-    public function setData(array $data)
-    {
-        foreach($data as $field => $value) {
-            if(!property_exists($this, $field)) continue;
-            $this->{$field} = $value;
-        }
-        return $this;
     }
 
     public function setRemoteData($data) {
@@ -64,7 +49,7 @@ class Department extends Client {
 
     public function loadInfo($update = false)
     {
-        $response = Request::get( $this->api . 'livechat/department/' . $this->id )->send();
+        $response = Request::get( $this->getClient()->getUrl('livechat/department/' . $this->id) )->send();
         if( $response->code == 200 && isset($response->body->success) && $response->body->success == true ) {
             $this->setRemoteData($response->body->department);
             $this->setRemoteAgentsData($response->body->agents);
@@ -92,7 +77,7 @@ class Department extends Client {
                 ];
         }
 
-        $response = Request::put( $this->api . 'livechat/department/' . $this->id )
+        $response = Request::put( $this->getClient()->getUrl('livechat/department/' . $this->id) )
             ->body($body)
             ->send();
 
@@ -115,7 +100,7 @@ class Department extends Client {
         $livechatUser = isset($this->agents[$user->username]) ? $this->agents[$user->username] : null;
         if($livechatUser) return true;
         //add
-        $this->agents[$agent->username] = new User([
+        $this->agents[$user->username] = new User([
             'type' => User::TYPE_AGENT,
             'id' => $user->id,
             'username' => $user->username,

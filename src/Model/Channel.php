@@ -1,36 +1,38 @@
 <?php
 
-namespace RocketChat;
+namespace RocketChat\Model;
 
 use Httpful\Request;
-use RocketChat\Client;
+use RocketChat\Model\Base as BaseModel;
 
-class Group extends Client {
+class Channel extends BaseModel {
 
     public $id;
     public $name;
-    public $members = array();
+    public $members = [];
 
-    public function __construct($name, $members = array()){
-        parent::__construct();
-        if( is_string($name) ) {
-            $this->name = $name;
-        } else if( isset($name->_id) ) {
-            $this->name = $name->name;
-            $this->id = $name->_id;
+    public function __construct($data){
+
+        if( is_string($data) ) {
+            $this->name = $data;
+        } else if( isset($data->_id) ) {
+            $this->name = $data->name;
+            $this->id = $data->_id;
         }
-        foreach($members as $member){
-            if( is_a($member, '\RocketChat\User') ) {
-                $this->members[] = $member;
-            } else if( is_string($member) ) {
-                // TODO
-                $this->members[] = new User($member);
-            }
-        }
+
+        $this->loadMembers();
+    }
+
+    public function loadMembers() {
+        if(!$this->id) return;
+
+        $list = $this->getClient()->getChannelMembers($this->id);
+
+        if($list) $this->members = $list;
     }
 
     /**
-     * Creates a new private group.
+     * Creates a new channel.
      */
     public function create(){
         // get user ids for members
@@ -43,36 +45,36 @@ class Group extends Client {
             }
         }
 
-        $response = Request::post( $this->api . 'groups.create' )
+        $response = Request::post( $this->getClient()->getUrl('channels.create') )
             ->body(array('name' => $this->name, 'members' => $members_id))
             ->send();
 
         if( $response->code == 200 && isset($response->body->success) && $response->body->success == true ) {
-            $this->id = $response->body->group->_id;
-            return $response->body->group;
+            $this->id = $response->body->channel->_id;
+            return $response->body->channel;
         } else {
-            echo( $response->body->error . "\n" );
+            $this->lastError = $response->body->error;
             return false;
         }
     }
 
     /**
-     * Retrieves the information about the private group, only if you’re part of the group.
+     * Retrieves the information about the channel.
      */
     public function info() {
-        $response = Request::get( $this->api . 'groups.info?roomId=' . $this->id )->send();
+        $response = Request::get( $this->getClient()->getUrl('channels.info', ['roomId' => $this->id]))->send();
 
         if( $response->code == 200 && isset($response->body->success) && $response->body->success == true ) {
-            $this->id = $response->body->group->_id;
+            $this->id = $response->body->channel->_id;
             return $response->body;
         } else {
-            echo( $response->body->error . "\n" );
+            $this->lastError = $response->body->error;
             return false;
         }
     }
 
     /**
-     * Post a message in this group, as the logged-in user
+     * Post a message in this channel, as the logged-in user
      */
     public function postMessage( $text ) {
         $message = is_string($text) ? array( 'text' => $text ) : $text;
@@ -80,69 +82,69 @@ class Group extends Client {
             $message['attachments'] = array();
         }
 
-        $response = Request::post( $this->api . 'chat.postMessage' )
+        $response = Request::post( $this->getClient()->getUrl('chat.postMessage') )
             ->body( array_merge(array('channel' => '#'.$this->name), $message) )
             ->send();
 
         if( $response->code == 200 && isset($response->body->success) && $response->body->success == true ) {
             return true;
         } else {
-            if( isset($response->body->error) )	echo( $response->body->error . "\n" );
-            else if( isset($response->body->message) )	echo( $response->body->message . "\n" );
+            if( isset($response->body->error) )	$this->lastError = $response->body->error;
+            else if( isset($response->body->message) ) $this->lastError = $response->body->message;
             return false;
         }
     }
 
     /**
-     * Removes the private group from the user’s list of groups, only if you’re part of the group.
+     * Removes the channel from the user’s list of channels.
      */
     public function close(){
-        $response = Request::post( $this->api . 'groups.close' )
+        $response = Request::post( $this->getClient()->getUrl('channels.close') )
             ->body(array('roomId' => $this->id))
             ->send();
 
         if( $response->code == 200 && isset($response->body->success) && $response->body->success == true ) {
             return true;
         } else {
-            echo( $response->body->error . "\n" );
+            $this->lastError = $response->body->error;
             return false;
         }
     }
 
     /**
-     * Removes a user from the private group.
+     * Removes a user from the channel.
      */
     public function kick( $user ){
-        // get group and user ids
+        // get channel and user ids
         $userId = is_string($user) ? $user : $user->id;
 
-        $response = Request::post( $this->api . 'groups.kick' )
+        $response = Request::post( $this->getClient()->getUrl('channels.kick') )
             ->body(array('roomId' => $this->id, 'userId' => $userId))
             ->send();
 
         if( $response->code == 200 && isset($response->body->success) && $response->body->success == true ) {
             return true;
         } else {
-            echo( $response->body->error . "\n" );
+            $this->lastError = $response->body->error;
             return false;
         }
     }
 
     /**
-     * Adds user to the private group.
+     * Adds user to channel.
      */
     public function invite( $user ) {
 
         $userId = is_string($user) ? $user : $user->id;
 
-        $response = Request::post( $this->api . 'groups.invite' )
+        $response = Request::post( $this->getClient()->api . 'channels.invite' )
             ->body(array('roomId' => $this->id, 'userId' => $userId))
             ->send();
 
         if( $response->code == 200 && isset($response->body->success) && $response->body->success == true ) {
             return true;
         } else {
-            echo( $response->body->error . "\n" );
+            $this->lastError = $response->body->error;
             return false;
         }
     }

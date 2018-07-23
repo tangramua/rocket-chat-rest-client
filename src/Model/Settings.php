@@ -1,23 +1,22 @@
 <?php
 
-namespace RocketChat;
+namespace RocketChat\Model;
 
 use Httpful\Request;
-use RocketChat\Client;
+use RocketChat\Model\Base as BaseModel;
 
 /**
  * Manage a settings collection.
  * The collection can be read/saved from/into a json file.
  */
-class Settings extends Client {
+class Settings extends BaseModel {
 
-    private $file;
+    public $file;
 
     /**
      * $file : path to the json file containing the setting collection.
      */
     public function __construct($file){
-        parent::__construct();
         $this->file = $file;
     }
 
@@ -25,7 +24,7 @@ class Settings extends Client {
      * Gets a setting from its ID.
      */
     public function get( $id ){
-        $response = Request::get( $this->api . 'settings/' . $id )->send();
+        $response = Request::get( $this->getClient()->getUrl('settings/' . $id) )->send();
 
         if( $response->code == 200 && isset($response->body->success) && $response->body->success == true ) {
             return $response->body->value;
@@ -38,7 +37,7 @@ class Settings extends Client {
      * Updates a setting.
      */
     public function update( $id, $value ){
-        $response = Request::post( $this->api . 'settings/' . $id )
+        $response = Request::post( $this->getClient()->getUrl('settings/' . $id) )
             ->body(array("value" => $value))
             ->send();
 
