@@ -1,26 +1,18 @@
 <?php
 
-namespace RocketChat\Model;
+namespace RocketChat\Model\Room;
 
 use Httpful\Request;
-use RocketChat\Model\Base as BaseModel;
+use RocketChat\Model\Room as RoomModel;
 
-class Channel extends BaseModel {
+class Channel extends RoomModel {
 
-    public $id;
-    public $name;
-    public $members = [];
-
-    public function __construct($data){
-
-        if( is_string($data) ) {
-            $this->name = $data;
-        } else if( isset($data->_id) ) {
-            $this->name = $data->name;
-            $this->id = $data->_id;
-        }
-
-        $this->loadMembers();
+    /**
+     * Force load members via separate api call as members that are sent with remote data contain already kicked ones
+     * @return bool
+     */
+    public function isMemberLoadRequired() {
+        return true;
     }
 
     public function loadMembers() {
@@ -148,6 +140,4 @@ class Channel extends BaseModel {
             return false;
         }
     }
-
 }
-

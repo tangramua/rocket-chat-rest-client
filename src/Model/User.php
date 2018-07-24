@@ -20,6 +20,7 @@ class User extends BaseModel{
     //    public $livechatDepartments = [];
 
     public $remoteData;
+    public $authToken;
 
 
     public function __construct($username = null, $password = null, $fields = array()){
@@ -33,7 +34,7 @@ class User extends BaseModel{
     }
 
     public function setRemoteData($data) {
-        $this->remoteData = $data;
+        parent::setRemoteData($data);
 
         $this->id = $this->remoteData->_id;
         $this->username = $this->remoteData->username;
@@ -46,18 +47,21 @@ class User extends BaseModel{
     /**
      * Authenticate with the REST API.
      */
-    public function login($save_auth = true) {
-        $response = Request::post( $this->getClient()->api . 'login' )
-            ->body(array( 'user' => $this->username, 'password' => $this->password ))
+    public function login($saveAuth = true) {
+        $response = Request::post( $this->getClient()->getUrl('login') )
+            ->body(['user' => $this->username, 'password' => $this->password])
             ->send();
 
         if( $response->code == 200 && isset($response->body->status) && $response->body->status == 'success' ) {
-            if( $save_auth) {
+            if($saveAuth) {
                 // save auth token for future requests
-                $tmp = Request::init()
+                $template = Request::init()
                     ->addHeader('X-Auth-Token', $response->body->data->authToken)
                     ->addHeader('X-User-Id', $response->body->data->userId);
-                Request::ini( $tmp );
+
+                $this->getClient()->adminAuthTemplate = $template;
+
+                Request::ini( $template );
             }
             $this->id = $response->body->data->userId;
             return true;
@@ -65,6 +69,33 @@ class User extends BaseModel{
             $this->lastError = $response->body->message;
             return false;
         }
+    }
+
+    public function getAuthToken() {
+        if($this->authToken) return $this->authToken;
+
+        $response = Request::post( $this->getClient()->getUrl('users.createToken') )
+            ->body(['userId' => $this->id])
+            ->send();
+
+        if($response->code != 200 || !isset($response->body->success) && !$response->body->success) {
+            $this->lastError = $response->body->error;
+            return false;
+        }
+
+        $this->authToken =  $response->body->data->authToken;
+
+        return $this->authToken;
+    }
+
+    public function loginByToken() {
+        $authToken = $this->getAuthToken();
+        if(!$authToken) return false;
+
+        $template = Request::init()
+            ->addHeader('X-Auth-Token', $authToken)
+            ->addHeader('X-User-Id', $this->id);
+        Request::ini($template);
     }
 
     /**
@@ -168,23 +199,55 @@ class User extends BaseModel{
     /**
      * Get user channels
      */
-    public function getChannels($update = false) {
+    public function getChannels() {
         $result = [];
         if(empty($this->username)) return $result;
 
-        $channels = $this->getClient()->getAllChannels($update);
+        $channels = $this->getClient()->getAllChannels();
         foreach($channels as $channel) {
-            $isMember = false;
-//var_dump($channel->name, $channel->members);
-            foreach($channel->members as $channelMember) {
-                if($this->username != $channelMember->username) continue;
-                $isMember = true;
-            }
+            $isMember = isset($channel->members[$this->username]);
             if(!$isMember) continue;
             $result[$channel->id] = $channel->name;
         }
-//var_dump($result);exit;
+
         return $result;
+    }
+
+    /**
+     * Get user Dms
+     */
+    public function getDms() {
+        $result = [];
+        if(empty($this->username)) return $result;
+
+        $result = $this->getClient()->getDms([
+            'usernames' => $this->username
+        ]);
+
+        return $result;
+    }
+
+    public function closeAllDms() {
+        $list = $this->getDms();
+
+        //close for current user
+//        $this->getClient()->runAsUser($this, function() use ($list) {
+//            foreach($list as $dm) {
+//                $dm->close();
+//            }
+//        });
+
+        //close for opposite user in dm
+        foreach($list as $dm) {
+            $users = $dm->members;
+
+            foreach($users as $user) {
+                if($user->id == $this->id) continue; //skip current user
+                $this->getClient()->runAsUser($user, function() use ($dm) {
+                    $dm->close();
+                });
+            }
+        }
     }
 
     /**

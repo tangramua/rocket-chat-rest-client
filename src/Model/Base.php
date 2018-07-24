@@ -6,6 +6,8 @@ use RocketChat\Client;
 
 class Base {
 
+    public $remoteData;
+
     /**
      * @return null|Client
      */
@@ -26,5 +28,14 @@ class Base {
             $this->{$field} = $value;
         }
         return $this;
+    }
+
+
+    /**
+     * Set remote data from API server
+     * @param $data
+     */
+    public function setRemoteData($data) {
+        $this->remoteData = $data;
     }
 }
