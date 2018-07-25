@@ -11,7 +11,7 @@ class Room extends BaseModel {
     public $name;
     public $members = [];
 
-    public function __construct($data)
+    public function __construct($data = [])
     {
         if( is_string($data) ) {
             $data = (object)['name' => $data];
