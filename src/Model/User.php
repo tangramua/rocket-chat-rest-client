@@ -220,9 +220,9 @@ class User extends BaseModel{
         $result = [];
         if(empty($this->username)) return $result;
 
-        $result = $this->getClient()->getDms([
-            'usernames' => $this->username
-        ]);
+        $this->getClient()->runAsUser($this, function() use (&$result) {
+            $result = $this->getClient()->getDms([], true);
+        });
 
         return $result;
     }
@@ -230,19 +230,10 @@ class User extends BaseModel{
     public function closeAllDms() {
         $list = $this->getDms();
 
-        //close for current user
-//        $this->getClient()->runAsUser($this, function() use ($list) {
-//            foreach($list as $dm) {
-//                $dm->close();
-//            }
-//        });
-
-        //close for opposite user in dm
+        //close for dm for each member
         foreach($list as $dm) {
             $users = $dm->members;
-
             foreach($users as $user) {
-                if($user->id == $this->id) continue; //skip current user
                 $this->getClient()->runAsUser($user, function() use ($dm) {
                     $dm->close();
                 });

@@ -9,6 +9,7 @@ class Client{
     public $api;
 
     public $adminAuthTemplate;
+    public $runningAsUser;
 
     public $lastError = null;
 
@@ -49,8 +50,10 @@ class Client{
      * Get version information. This simple method requires no authentication.
      */
     public function version() {
+        if(!empty($this->apiVersion)) return $this->apiVersion;
         $response = Request::get( $this->getUrl('info') )->send();
-        return $response->body->info->version;
+        $this->apiVersion = $response->body->info->version;
+        return $this->apiVersion;
     }
 
     /**
@@ -71,13 +74,16 @@ class Client{
 
     public function runAsUser($user, $callback) {
         //auth as user
+        $this->runningAsUser = true;
         $user->loginByToken();
 
         $callback();
 
         //restore
+        $this->runningAsUser = false;
         Request::ini( $this->adminAuthTemplate );
     }
+
 
     /**
      * List all of the users and their information.
@@ -104,9 +110,10 @@ class Client{
 
     public function getUsers($query = [])
     {
-        $list = $this->loadUsers($query);
-
         $result = [];
+        $list = $this->loadUsers($query);
+        if(!$list) return $result;
+
         foreach($list as $userData) {
             $user = new Model\User();
             $user->setRemoteData($userData);
@@ -130,19 +137,26 @@ class Client{
     /**
      * List the private groups the caller is part of.
      */
-    public function list_groups() {
+    public function loadGroups() {
         $response = Request::get($this->getUrl('groups.list') )->send();
-
-        if( $response->code == 200 && isset($response->body->success) && $response->body->success == true ) {
-            $groups = array();
-            foreach($response->body->groups as $group){
-                $groups[] = new Model\Group($group);
-            }
-            return $groups;
-        } else {
+        if( $response->code != 200 || !isset($response->body->success) || !$response->body->success ) {
             $this->lastError = $response->body->error;
             return false;
         }
+        return $response->body->groups;
+    }
+
+    public function getGroups()
+    {
+        $result = [];
+        $list = $this->loadGroups();
+        if(!$list) return $result;
+
+        foreach($list as $group){
+            $result[] = new Model\Group($group);
+        }
+        return $result;
+
     }
 
     /**
@@ -162,7 +176,13 @@ class Client{
         if(!$route) {
             throw new \Exception('Route to load room members is not defined for type '.$type);
         }
-        $response = Request::get($this->getUrl($route, ['roomId' => $id]))->send();
+
+        $arguments = [
+            'roomId' => $id,
+            'sort' => json_encode(['username' => 1]),
+        ];
+        $response = Request::get($this->getUrl($route, $arguments))->send();
+
         if($response->code != 200 || !isset($response->body->success) || $response->body->success != true ) {
             $this->lastError = $response->body->error;
             return false;
@@ -233,15 +253,17 @@ class Client{
     /**
      * Load Rooms : Direct Messages
      * @param array $query
-     * @return bool
+     * @param bool $currentUser
+     * @return array|bool
      */
-    public function loadDms($query = []) {
+    public function loadDms($query = [], $currentUser = false) {
         $arguments = ['count' => 0,];
         if($query) $arguments['query'] = json_encode($query);
 
-        $url = $this->getUrl('dm.list.everyone', $arguments);
-
+        $route = ($currentUser) ? 'dm.list' : 'dm.list.everyone';
+        $url = $this->getUrl($route, $arguments);
         $response = Request::get($url)->send();
+
         if( !$response->code == 200 || !isset($response->body->success) || !$response->body->success) {
             $this->lastError = $response->body->error;
             return false;
@@ -251,10 +273,11 @@ class Client{
 
     /**
      * @param array $filter
+     * @param bool $currentUser
      * @return array
      */
-    public function getDms($filter = []) {
-        $list = $this->loadDms($filter);
+    public function getDms($filter = [], $currentUser = false) {
+        $list = $this->loadDms($filter, $currentUser);
 
         $result = [];
         foreach($list as $dmData) {

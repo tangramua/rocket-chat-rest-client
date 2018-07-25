@@ -12,6 +12,14 @@ class Channel extends RoomModel {
      * @return bool
      */
     public function isMemberLoadRequired() {
+        $version = $this->getClient()->version();
+        $versionIsDev = (strpos($version, 'develop') !== false);
+
+        //in 0.59 release channels.members were added and should be used to correctly find channel members
+        if((float)$version < 0.59 || ((float)$version == 0.59 && $versionIsDev)) {
+            return false;
+        }
+
         return true;
     }
 
