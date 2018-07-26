@@ -199,11 +199,11 @@ class User extends BaseModel{
     /**
      * Get user channels
      */
-    public function getChannels() {
+    public function getChannels($update = false) {
         $result = [];
         if(empty($this->username)) return $result;
 
-        $channels = $this->getClient()->getAllChannels();
+        $channels = $this->getClient()->getAllChannels($update);
         foreach($channels as $channel) {
             $isMember = isset($channel->members[$this->username]);
             if(!$isMember) continue;
