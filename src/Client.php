@@ -377,7 +377,7 @@ class Client{
     public function getLivechatDepartments()
     {
         $list = $this->loadLivechatDepartments();
-        if(!$list) return false;
+        if(!$list) return [];
 
         $result = [];
         foreach($list as $livechatDepartmentData){
