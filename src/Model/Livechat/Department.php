@@ -4,7 +4,6 @@ namespace RocketChat\Model\Livechat;
 
 use Httpful\Request;
 use RocketChat\Model\Base as BaseModel;
-use RocketChat\Model\User;
 
 class Department extends BaseModel {
 
