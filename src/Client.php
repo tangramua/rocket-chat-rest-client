@@ -384,7 +384,7 @@ class Client{
             $livechatDepartment = new Model\Livechat\Department();
             $livechatDepartment->setRemoteData($livechatDepartmentData);
             $livechatDepartment->loadInfo();
-            $list[$livechatDepartment->id] = $livechatDepartment;
+            $result[$livechatDepartment->id] = $livechatDepartment;
         }
         return $result;
     }
