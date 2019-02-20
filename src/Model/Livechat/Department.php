@@ -4,6 +4,7 @@ namespace RocketChat\Model\Livechat;
 
 use Httpful\Request;
 use RocketChat\Model\Base as BaseModel;
+use RocketChat\Model\User;
 
 class Department extends BaseModel {
 
@@ -92,10 +93,10 @@ class Department extends BaseModel {
 
     /**
      * 
-     * @param \RocketChat\User $user
+     * @param User $user
      * @return bool
      */
-    public function invite(\RocketChat\User $user) {
+    public function invite(User $user) {
         //check
         $livechatUser = isset($this->agents[$user->username]) ? $this->agents[$user->username] : null;
         if($livechatUser) return true;
@@ -111,10 +112,10 @@ class Department extends BaseModel {
 
     /**
      * 
-     * @param \RocketChat\User $user
+     * @param User $user
      * @return bool
      */
-    public function kick(\RocketChat\User $user) {
+    public function kick(User $user) {
         //check
         $livechatUser = isset($this->agents[$user->username]) ? $this->agents[$user->username] : null;
         if(!$livechatUser) return true;

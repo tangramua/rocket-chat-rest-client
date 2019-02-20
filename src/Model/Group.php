@@ -19,7 +19,7 @@ class Group extends BaseModel {
             $this->id = $name->_id;
         }
         foreach($members as $member){
-            if( is_a($member, '\RocketChat\User') ) {
+            if( is_a($member, User::class) ) {
                 $this->members[] = $member;
             } else if( is_string($member) ) {
                 // TODO
