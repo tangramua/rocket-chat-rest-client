@@ -47,16 +47,6 @@ class Client{
 
 
     /**
-     * Get version information. This simple method requires no authentication.
-     */
-    public function version() {
-        if(!empty($this->apiVersion)) return $this->apiVersion;
-        $response = Request::get( $this->getUrl('info') )->send();
-        $this->apiVersion = $response->body->info->version;
-        return $this->apiVersion;
-    }
-
-    /**
      * Quick information about the authenticated user.
      */
     public function me() {
