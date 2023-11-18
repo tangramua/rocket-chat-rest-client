@@ -13,6 +13,7 @@ class Department extends BaseModel {
     public $name;
     public $description = null;
     public $showOnRegistration = true;
+    public $showOnOfflineForm = true;
 
     public $agents = [];
 
@@ -60,14 +61,16 @@ class Department extends BaseModel {
         }
     }
 
-    public function update() 
+    public function update($email)
     {
         $body = [
             'department' => [
             'enabled' => $this->enabled,
             'showOnRegistration' => $this->showOnRegistration,
+            'showOnOfflineForm' => $this->showOnOfflineForm,
             'name' => $this->name,
             'description' => $this->description,
+            'email' => $email,
             ],
             'agents' => [],
             ];
@@ -79,6 +82,33 @@ class Department extends BaseModel {
         }
 
         $response = Request::put( $this->getClient()->getUrl('livechat/department/' . $this->id) )
+            ->body($body)
+            ->send();
+
+        if( $response->code == 200 && isset($response->body->success) && $response->body->success == true ) {
+            return true;
+        } else {
+            $this->lastError = $response->body->error;
+            return false;
+        }
+    }
+
+    public function removeAgent($user)
+    {
+        $body = [
+            "upsert" => [],
+            "remove" => [],
+            ];
+        foreach($this->agents as $agent) {
+            if ($agent->username == $user->username){
+                $body["remove"][] = [
+                    'agentId' => $agent->id,
+                    'username' =>  $agent->username,
+                ];
+            }
+        }
+
+        $response = Request::post( $this->getClient()->getUrl('livechat/department/' . $this->id . '/agents') )
             ->body($body)
             ->send();
 
@@ -107,7 +137,7 @@ class Department extends BaseModel {
             'username' => $user->username,
             ]);
         //save
-        return $this->update();
+        return $this->update($user->email);
     }
 
     /**
@@ -120,10 +150,7 @@ class Department extends BaseModel {
         $livechatUser = isset($this->agents[$user->username]) ? $this->agents[$user->username] : null;
         if(!$livechatUser) return true;
         //remove
-        unset($this->agents[$user->username]);
-        //save
-        return $this->update();
+        return $this->removeAgent($user);
     }
-
 
 }
