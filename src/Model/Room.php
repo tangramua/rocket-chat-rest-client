@@ -18,6 +18,9 @@ class Room extends BaseModel {
     public $name;
     public $members = [];
 
+    /** @var array room owner */
+    public $u = [];
+
     public function __construct($data = [])
     {
         if( is_string($data) ) {
@@ -44,6 +47,16 @@ class Room extends BaseModel {
             $users = $this->getClient()->getAllUsers();
             $this->members = array_intersect_key($users, array_combine($this->remoteData->usernames, $this->remoteData->usernames));
         }
+    }
+
+    /**
+     * @param string $username
+     *
+     * @return bool
+     */
+    public function isOwner($username)
+    {
+        return isset($this->u['username']) && $this->u['username'] === $username;
     }
 }
 
