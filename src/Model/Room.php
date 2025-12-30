@@ -21,6 +21,9 @@ class Room extends BaseModel {
     /** @var array room owner */
     public $u = [];
 
+    /** @var string room type */
+    public $t = '';
+
     public function __construct($data = [])
     {
         if( is_string($data) ) {
