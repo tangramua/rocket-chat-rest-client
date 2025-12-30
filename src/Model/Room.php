@@ -24,6 +24,9 @@ class Room extends BaseModel {
     /** @var string room type */
     public $t = '';
 
+    /** @var string existing room identifier */
+    public $_id = '';
+
     public function __construct($data = [])
     {
         if( is_string($data) ) {
