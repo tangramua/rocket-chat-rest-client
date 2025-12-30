@@ -3,6 +3,7 @@
 namespace RocketChat;
 
 use Httpful\Request;
+use RocketChat\Model\Room;
 
 class Client{
 
@@ -284,6 +285,47 @@ class Client{
      */
     public function getDmMembers($id) {
         return $this->getRoomMembers('dm', $id);
+    }
+
+    /**
+     * Retrieves all rooms and admin information.
+     * Permission required: view-room-administration.
+     *
+     * @url https://developer.rocket.chat/apidocs/get-all-room-admins
+     *
+     * @param int $count
+     * @param int $offset
+     * @param string[] $room_types
+     *
+     * @return false|Room[]
+     */
+    public function getAllRoomsWithAdmins(
+        $count = 50,
+        $offset = 0,
+        $room_types = []
+    ) {
+        $route = 'rooms.adminRooms';
+
+        $url = $this->getUrl($route, [
+            'count' => $count,
+            'offset' => $offset,
+            'types' => $room_types,
+        ]);
+
+        $response = Request::get($url)->send();
+
+        if( !$response->code == 200 || !isset($response->body->success) || !$response->body->success) {
+            $this->lastError = $response->body->error;
+            return false;
+        }
+
+        $rooms = $response->body->rooms;
+
+        return array_map(static function ($room) {
+            return new Room(
+                json_decode(json_encode($room), true)
+            );
+        }, $rooms);
     }
 
 
