@@ -6,6 +6,13 @@ use Httpful\Request;
 use RocketChat\Model\Base as BaseModel;
 
 class Room extends BaseModel {
+    const DIRECT_MESSAGE_ROOM_TYPE = 'd';
+    const PUBLIC_CHANNEL_ROOM_TYPE = 'c';
+    const PRIVATE_CHANNEL_ROOM_TYPE = 'p';
+    const DISCUSSION_ROOM_TYPE = 'discussions';
+    const TEAMS_ROOM_TYPE = 'teams';
+    const LIVECHAT_ROOM_TYPE = 'l';
+    const OMNICHANNEL_VOIP_ROOM_TYPE = 'v';
 
     public $id;
     public $name;
