@@ -126,6 +126,13 @@ class Room extends BaseModel {
             ])
             ->send();
 
+        // leave room by user that uses for API requests
+        Request::post( $this->getClient()->getUrl('groups.leave') )
+            ->body([
+                'roomId' => $room_id,
+            ])
+            ->send();
+
         if($addOwnerResponse->code == 200 && isset($addOwnerResponse->body->success) && $addOwnerResponse->body->success == true) {
             return true;
         } else {
