@@ -280,11 +280,7 @@ class User extends BaseModel{
         } while (!$allRoomsIterated);
 
         foreach ($previousOwnerRooms as $room) {
-            $isNewOwnerAdded = $room->addGroupOwner($new_owner_user_id);
-
-            if (!$isNewOwnerAdded) {
-                return false;
-            }
+            $room->addGroupOwner($new_owner_user_id);
         }
 
         return true;
