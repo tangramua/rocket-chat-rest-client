@@ -108,6 +108,17 @@ class Room extends BaseModel {
             return false;
         }
 
+        $addNewOwnerUserToGroupResponse = Request::post( $this->getClient()->getUrl('groups.invite') )
+            ->body([
+                'roomId' => $room_id,
+                'userId' => $user_id,
+            ])
+            ->send();
+
+        if($addNewOwnerUserToGroupResponse->code !== 200 && !isset($addNewOwnerUserToGroupResponse->body->success) && !$addNewOwnerUserToGroupResponse->body->success == true) {
+            return false;
+        }
+
         $addOwnerResponse = Request::post( $this->getClient()->getUrl('groups.addOwner') )
             ->body([
                 'roomId' => $room_id,
