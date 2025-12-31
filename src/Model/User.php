@@ -242,6 +242,55 @@ class User extends BaseModel{
     }
 
     /**
+     * User cannot be deactivated in Rocket Chat until it has private chats.
+     * User can be deactivated automatically, but in this case chat will set the oldest user as new chat owner.
+     *
+     * @return bool
+     */
+    public function addNewOwnerToMyPrivateChats(
+        $previous_owner_username,
+        $new_owner_user_id
+    ) {
+        /** @var Room[] $previousOwnerRooms */
+        $previousOwnerRooms = [];
+
+        $count = 100;
+        $offset = 0;
+        $allRoomsIterated = false;
+
+        do {
+            $rooms = $this->getClient()->getAllRoomsWithAdmins(
+                $count,
+                $offset,
+                [Room::PRIVATE_CHANNEL_ROOM_TYPE]
+            );
+
+            if (empty($rooms)) {
+                $allRoomsIterated = true;
+                continue;
+            }
+
+            $offset += $count;
+
+            foreach ($rooms as $room) {
+                if ($room->isOwner($previous_owner_username)) {
+                    $previousOwnerRooms[] = $room;
+                }
+            }
+        } while (!$allRoomsIterated);
+
+        foreach ($previousOwnerRooms as $room) {
+            $isNewOwnerAdded = $room->addGroupOwner($new_owner_user_id);
+
+            if (!$isNewOwnerAdded) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * Get user channels
      */
     public function getLivechatDepartments($update = false) {

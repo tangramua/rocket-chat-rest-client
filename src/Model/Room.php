@@ -64,5 +64,63 @@ class Room extends BaseModel {
     {
         return isset($this->u['username']) && $this->u['username'] === $username;
     }
+
+    /**
+     * @return string
+     */
+    public function getRoomID()
+    {
+        $room_id = $this->id;
+
+        if (!$room_id) {
+            $room_id = $this->_id;
+        }
+
+        return $room_id;
+    }
+
+    /**
+     * Assign owner role for a user in the current private channel. But first add current admin user that is used in API requests.
+     *
+     * @url https://developer.rocket.chat/apidocs/invite-users-to-group
+     * @url https://developer.rocket.chat/apidocs/add-group-owner
+     *
+     * @return bool
+     */
+    public function addGroupOwner($user_id)
+    {
+        $request = Request::init();
+
+        $adminUserIdUserInRequest = isset($request->headers['X-User-Id'])
+            ? $request->headers['X-User-Id']
+            : '';
+
+        $room_id = $this->getRoomID();
+
+        $addUserToGroupResponse = Request::post( $this->getClient()->getUrl('groups.invite') )
+            ->body([
+                'roomId' => $room_id,
+                'userId' => $adminUserIdUserInRequest,
+            ])
+            ->send();
+
+        if($addUserToGroupResponse->code !== 200 && !isset($addUserToGroupResponse->body->success) && !$addUserToGroupResponse->body->success == true) {
+            return false;
+        }
+
+        $addOwnerResponse = Request::post( $this->getClient()->getUrl('groups.addOwner') )
+            ->body([
+                'roomId' => $room_id,
+                'userId' => $user_id
+            ])
+            ->send();
+
+        if($addOwnerResponse->code == 200 && isset($addOwnerResponse->body->success) && $addOwnerResponse->body->success == true) {
+            return true;
+        } else {
+            $this->lastError = $addOwnerResponse->body->error;
+            return false;
+        }
+    }
 }
 
