@@ -102,6 +102,28 @@ class Room extends BaseModel {
     }
 
     /**
+     * @return bool
+     */
+    public function removeMember($user_id)
+    {
+        $room_id = $this->getRoomID();
+
+        $response = Request::post( $this->getClient()->getUrl('groups.kick') )
+            ->body([
+                'roomId' => $room_id,
+                'userId' => $user_id,
+            ])
+            ->send();
+
+        if($response->code == 200 && isset($response->body->success) && $response->body->success == true) {
+            return true;
+        } else {
+            $this->lastError = $response->body->error;
+            return false;
+        }
+    }
+
+    /**
      * Assign owner role for a user in the current private channel. But first add current admin user that is used in API requests.
      *
      * @url https://developer.rocket.chat/apidocs/invite-users-to-group
@@ -138,12 +160,7 @@ class Room extends BaseModel {
             ])
             ->send();
 
-        // leave room by user that uses for API requests
-        Request::post( $this->getClient()->getUrl('groups.leave') )
-            ->body([
-                'roomId' => $room_id,
-            ])
-            ->send();
+        $this->removeMember($adminUserIdUsedInAPIRequests);
 
         if($changeUserRoleToOwnerResponse->code == 200 && isset($changeUserRoleToOwnerResponse->body->success) && $changeUserRoleToOwnerResponse->body->success == true) {
             return true;
