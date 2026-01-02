@@ -80,6 +80,28 @@ class Room extends BaseModel {
     }
 
     /**
+     * @return bool
+     */
+    public function inviteMember($user_id)
+    {
+        $room_id = $this->getRoomID();
+
+        $response = Request::post( $this->getClient()->getUrl('groups.invite') )
+            ->body([
+                'roomId' => $room_id,
+                'userId' => $user_id,
+            ])
+            ->send();
+
+        if($response->code == 200 && isset($response->body->success) && $response->body->success == true) {
+            return true;
+        } else {
+            $this->lastError = $response->body->error;
+            return false;
+        }
+    }
+
+    /**
      * Assign owner role for a user in the current private channel. But first add current admin user that is used in API requests.
      *
      * @url https://developer.rocket.chat/apidocs/invite-users-to-group
@@ -91,35 +113,25 @@ class Room extends BaseModel {
     {
         $request = Request::init();
 
-        $adminUserIdUserInRequest = isset($request->headers['X-User-Id'])
+        $adminUserIdUsedInAPIRequests = isset($request->headers['X-User-Id'])
             ? $request->headers['X-User-Id']
             : '';
 
+        $addAdminUserToGroupResponse = $this->inviteMember($adminUserIdUsedInAPIRequests);
+
+        if(!$addAdminUserToGroupResponse) {
+            return false;
+        }
+
+        $addNewOwnerUserToGroupResponse = $this->inviteMember($user_id);
+
+        if(!$addNewOwnerUserToGroupResponse) {
+            return false;
+        }
+
         $room_id = $this->getRoomID();
 
-        $addUserToGroupResponse = Request::post( $this->getClient()->getUrl('groups.invite') )
-            ->body([
-                'roomId' => $room_id,
-                'userId' => $adminUserIdUserInRequest,
-            ])
-            ->send();
-
-        if($addUserToGroupResponse->code !== 200 && !isset($addUserToGroupResponse->body->success) && !$addUserToGroupResponse->body->success == true) {
-            return false;
-        }
-
-        $addNewOwnerUserToGroupResponse = Request::post( $this->getClient()->getUrl('groups.invite') )
-            ->body([
-                'roomId' => $room_id,
-                'userId' => $user_id,
-            ])
-            ->send();
-
-        if($addNewOwnerUserToGroupResponse->code !== 200 && !isset($addNewOwnerUserToGroupResponse->body->success) && !$addNewOwnerUserToGroupResponse->body->success == true) {
-            return false;
-        }
-
-        $addOwnerResponse = Request::post( $this->getClient()->getUrl('groups.addOwner') )
+        $changeUserRoleToOwnerResponse = Request::post( $this->getClient()->getUrl('groups.addOwner') )
             ->body([
                 'roomId' => $room_id,
                 'userId' => $user_id
@@ -133,10 +145,10 @@ class Room extends BaseModel {
             ])
             ->send();
 
-        if($addOwnerResponse->code == 200 && isset($addOwnerResponse->body->success) && $addOwnerResponse->body->success == true) {
+        if($changeUserRoleToOwnerResponse->code == 200 && isset($changeUserRoleToOwnerResponse->body->success) && $changeUserRoleToOwnerResponse->body->success == true) {
             return true;
         } else {
-            $this->lastError = $addOwnerResponse->body->error;
+            $this->lastError = $changeUserRoleToOwnerResponse->body->error;
             return false;
         }
     }
